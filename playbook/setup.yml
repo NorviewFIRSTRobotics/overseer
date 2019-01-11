@@ -1,0 +1,34 @@
+---
+- hosts: raspberrypi
+  remote_user: pi
+  become: true
+  become_user: root
+  become_method: sudo
+  gather_facts: True
+  tasks:
+    - name: ping
+      ping:
+    - name: Ensure SSH
+      service:
+        name: ssh
+        enabled: true
+        state: started
+    - name: install java
+      apt:
+        name: openjdk-9-jre-headless
+        state: present
+        update_cache: yes
+    - name: Setup service directory
+      file:
+        path: /srv/vision
+        state: directory
+        owner: pi 
+    - name: Add vision.service
+      copy:
+        src="../vision.service" dest="/etc/systemd/system"
+    - name: Enable vision.service
+      service:
+        name: vision
+        enabled: yes
+        state: stopped
+
