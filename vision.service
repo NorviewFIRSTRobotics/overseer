@@ -1,0 +1,12 @@
+[Unit]
+Description=Service for running opencv computer vision pipeline
+Requires=network.target
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+ExecStart=/srv/vision/run_vision.sh
+
+[Install]
+WantedBy=multi-user.target

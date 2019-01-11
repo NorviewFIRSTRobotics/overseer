@@ -1,0 +1,61 @@
+plugins {
+    id "java"
+    id "edu.wpi.first.GradleRIO" version "2019.1.1"
+    id 'org.hidetake.ssh' version '2.9.0'
+}
+
+def ROBOT_MAIN_CLASS = "frc.team1793.vision.Main"
+
+def DEPLOY_DIRECTORY = '/srv/vision'
+
+group 'team1793'
+version '0.0.0'
+archivesBaseName = 'vision'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.opencv:opencv-java:3.2.0'
+
+    compile wpi.deps.wpilib()
+    compile wpi.deps.vendor.java()
+
+    nativeZip wpi.deps.vendor.jni(wpi.platforms.roborio)
+    nativeDesktopZip wpi.deps.vendor.jni(wpi.platforms.desktop)
+    testCompile 'junit:junit:4.12'
+}
+
+wrapper {
+    gradleVersion = '5.0'
+}
+
+jar {
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
+}
+
+remotes {
+    vision {
+        host = vision_host
+        user = vison_user
+        password = vision_password
+    }
+}
+
+task deploy(overwrite: true) {
+    doLast {
+        ssh.run {
+            session(remotes.vision) {
+                put from: "${buildDir}/libs/${project.archivesBaseName}-${project.version}.jar", into: DEPLOY_DIRECTORY
+                put from: file('run_vision.sh'), into: DEPLOY_DIRECTORY
+                execute 'sudo systemctl enable vision'
+                execute 'sudo systemctl restart vision'
+            }
+        }
+    }
+}
+
